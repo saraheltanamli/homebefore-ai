@@ -11,7 +11,13 @@ export async function POST(req){
   const model=process.env.GEMINI_MODEL||'gemini-2.5-flash';
   const response=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.3,maxOutputTokens:850}}),cache:'no-store'});
   const result=await response.json();
-  if(!response.ok)return NextResponse.json({error:'AI service is unavailable or has reached its usage limit. Try again later.'},{status:502});
+  if (!response.ok) {
+  console.error('Gemini API error:', response.status, result?.error?.message);
+  return NextResponse.json(
+    { error: `Gemini returned error ${response.status}. Check Vercel Runtime Logs.` },
+    { status: 502 }
+  );
+}
   const text=result?.candidates?.[0]?.content?.parts?.map(p=>p.text||'').join('\n');
   if(!text)return NextResponse.json({error:'No response returned. Please try again.'},{status:502});
   return NextResponse.json({plan:text},{headers:{'Cache-Control':'no-store'}});
